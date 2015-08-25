@@ -1,8 +1,9 @@
+import url from 'url';
 import {boundarySeparator, boundaryString, contentType, newLine, httpVersion} from './constants';
 import parseBatchedResponse from 'batched-response-parser.js';
 import request from 'superagent';
 
-const buildRequest = (req) => {
+function buildRequest(req) {
   let body = [];
   const {pathname, host} = url.parse(req.url);
   const query = req._query.length ? `?${req._query.join('&')}` : '';
@@ -17,6 +18,7 @@ const buildRequest = (req) => {
   if (host === null && !window) {
     throw ('Couldn\'t determine host name for batched request');
   }
+
   body.push(`Host: ${host || window.location.host}`);
 
   Object.keys(req.header).forEach((header) => body.push(`${header}: ${req.header[header]}`));
@@ -30,7 +32,7 @@ const buildRequest = (req) => {
   body.push('');
 
   return body.join(newLine);
-};
+}
 
 export default function createBatchingAgent(containerRequest) {
   let batches = [];
@@ -49,14 +51,16 @@ export default function createBatchingAgent(containerRequest) {
       let responses = parseBatchedResponse(batches, res);
       responses.forEach((resp) => {
         if (resp.req._callback) {
-          resp.req._callback(resp);
+          resp.req._callback(resp.toError(), resp);
         }
       });
+
       if (callback) {
         callback(err, res);
       }
     });
   };
+
   BatchingAgent.Request.prototype.end = function end(callback) {
     if (this._data) {
       let serializer = BatchingAgent.serialize[this.header[contentType]];
@@ -66,9 +70,11 @@ export default function createBatchingAgent(containerRequest) {
         this._serializedData = this._data;
       }
     }
+
     this._callback = callback;
     batches.push(this);
     return BatchingAgent;
   };
+
   return BatchingAgent;
 }

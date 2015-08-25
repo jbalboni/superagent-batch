@@ -1,4 +1,3 @@
-import url from 'url';
 import createBatchingAgent from './batching-agent';
 import {boundaryString, contentType} from './constants.js';
 
@@ -7,6 +6,7 @@ const superagentBatch = function(superagent) {
     this.set(contentType, `multipart/mixed; boundary=${boundaryString}`);
     return createBatchingAgent(this);
   };
+
   return superagent;
 };
 

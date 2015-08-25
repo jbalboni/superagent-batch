@@ -48,6 +48,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== 'function' 
     parsedResponse.status = status;
     parsedResponse.statusMessage = message.join(' ');
     parsedResponse.headers = {};
+
     while (respLines[0] !== '') {
       var _respLines$shift$split3 = respLines.shift().split(': ');
 
@@ -58,6 +59,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== 'function' 
 
       parsedResponse.headers[_name.toLowerCase()] = content;
     }
+
     respLines.shift();
     parsedResponse.body = respLines.shift();
     return parsedResponse;
@@ -68,14 +70,16 @@ function _inherits(subClass, superClass) { if (typeof superClass !== 'function' 
     var responses = res.text.split(separator).filter(function (resp) {
       return resp.replace(newLine, '') !== boundarySeparator && resp.replace(newLine, '').length;
     });
+
     var superagentResponses = responses.map(function (resp, i) {
       var parsedResponse = parseResponse(resp);
       return new BatchResponse(batches[i], parsedResponse);
     });
+
     return superagentResponses;
   };
 
-  var buildRequest = function buildRequest(req) {
+  function buildRequest(req) {
     var body = [];
 
     var _url$parse = url.parse(req.url);
@@ -95,6 +99,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== 'function' 
     if (host === null && !window) {
       throw 'Couldn\'t determine host name for batched request';
     }
+
     body.push('Host: ' + (host || window.location.host));
 
     Object.keys(req.header).forEach(function (header) {
@@ -110,7 +115,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== 'function' 
     body.push('');
 
     return body.join(newLine);
-  };
+  }
 
   function createBatchingAgent(containerRequest) {
     var batches = [];
@@ -141,14 +146,16 @@ function _inherits(subClass, superClass) { if (typeof superClass !== 'function' 
         var responses = parseBatchedResponse(batches, res);
         responses.forEach(function (resp) {
           if (resp.req._callback) {
-            resp.req._callback(resp);
+            resp.req._callback(resp.toError(), resp);
           }
         });
+
         if (callback) {
           callback(err, res);
         }
       });
     };
+
     BatchingAgent.Request.prototype.end = function end(callback) {
       if (this._data) {
         var serializer = BatchingAgent.serialize[this.header[contentType]];
@@ -158,10 +165,12 @@ function _inherits(subClass, superClass) { if (typeof superClass !== 'function' 
           this._serializedData = this._data;
         }
       }
+
       this._callback = callback;
       batches.push(this);
       return BatchingAgent;
     };
+
     return BatchingAgent;
   }
 
@@ -170,6 +179,7 @@ function _inherits(subClass, superClass) { if (typeof superClass !== 'function' 
       this.set(contentType, 'multipart/mixed; boundary=' + boundaryString);
       return createBatchingAgent(this);
     };
+
     return superagent;
   };
 
